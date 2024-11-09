@@ -1,22 +1,6 @@
 import numpy as np
 
-def one_choice(bins: np.ndarray, batch_size: int, m: int) -> None:
-    """
-    Implements the one-choice strategy where each ball is placed in a randomly selected bin.
-
-    Args:
-        bins (numpy.ndarray): Array representing the current load of each bin.
-        batch_size (int): Number of balls placed in each iteration.
-        m (int): Number of bins.
-
-    Returns:
-        None. Modifies the `bins` array in-place by updating bin loads.
-    """
-    choices = np.random.randint(0, m, size=batch_size)
-    np.add.at(bins, choices, 1)
-
-
-def two_choice(bins: np.ndarray, batch_size: int, m: int) -> None:
+def k_choices(bins: np.ndarray, batch_size: int, m: int, k: int) -> None:
     """
     Implements the two-choice strategy where each ball is placed in the less loaded of two randomly selected bins.
 
@@ -24,13 +8,18 @@ def two_choice(bins: np.ndarray, batch_size: int, m: int) -> None:
         bins (numpy.ndarray): Array representing the current load of each bin.
         batch_size (int): Number of balls placed in each iteration.
         m (int): Number of bins.
+        k (int): Number of balls that we can choose.
 
     Returns:
         None. Modifies the `bins` array in-place by updating bin loads.
     """
-    choices = np.random.choice(m, (batch_size, 2))
-    selected_bins = np.argmin(bins[choices], axis=1)
-    updates = choices[np.arange(batch_size), selected_bins]
+    choices = np.random.choice(m, (batch_size, k))
+    loads = bins[choices]
+    min_loads = np.min(loads, axis=1, keepdims=True)
+    min_indices = (loads == min_loads)
+    cum_counts = np.cumsum(min_indices, axis=1) * min_indices
+    chosen_idx = np.argmax((cum_counts == np.random.randint(1, cum_counts.max(axis=1, keepdims=True) + 1)), axis=1)
+    updates = choices[np.arange(batch_size), chosen_idx]
     np.add.at(bins, updates, 1)
 
 
@@ -55,13 +44,13 @@ def beta_choice(bins: np.ndarray, batch_size: int, m: int, beta: float) -> None:
     two_choice_indices = np.where(random_probs >= beta)[0]
 
     if two_choice_indices.size > 0:
-        two_choice(bins, two_choice_indices.size, m)
+        k_choices(bins, two_choice_indices.size, m, 2)
 
     if one_choice_indices.size > 0:
-        one_choice(bins, one_choice_indices.size, m)
+        k_choices(bins, one_choice_indices.size, m, 1)
 
 
-def partial_information(bins: np.ndarray, batch_size: int, m: int, k: int) -> None:
+def k_partial_information(bins: np.ndarray, batch_size: int, m: int, k: int) -> None:
     """
     Implements a partial-information strategy where balls are placed based on load comparisons relative to
     the median or 75th percentile (for k=2) thresholds:
