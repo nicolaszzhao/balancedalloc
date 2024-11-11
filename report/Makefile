@@ -1,11 +1,16 @@
-.PHONY: purge clean all
+.PHONY: purge clean all generate-plots
 
-TARGET = nicolas.zhao-balancedalloc.tex
+TARGET = nicolas.zhao-balancedalloc.pdf
 
 all: $(TARGET)
 
-%.pdf: %.tex
+
+%.pdf: %.tex generate-plots
 	latexmk -shell-escape -pdf $<
+
+
+generate-plots:
+	python3 ../src/driver.py
 
 clean:
 	rm -f *.out *.fdb_latexmk *.fls *.log *.aux *.toc *.synctex.gz
