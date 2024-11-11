@@ -1,0 +1,4 @@
+notebook
+numpy
+seaborn
+matplotlib
